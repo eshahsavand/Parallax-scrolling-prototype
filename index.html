@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parallax scrollytelling page</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --text: #f5f7fb;
+      --muted: rgba(255, 255, 255, 0.78);
+      --panel-bg: rgba(9, 14, 28, 0.62);
+      --panel-border: rgba(255, 255, 255, 0.14);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+      --max-width: 1200px;
+      --panel-width: min(42rem, 86vw);
+      --panel-radius: 24px;
+      --text-speed: 28vh;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .intro,
+    .outro {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 8rem 1.5rem;
+      position: relative;
+      z-index: 2;
+      background:
+        radial-gradient(circle at top, rgba(105, 142, 255, 0.18), transparent 35%),
+        linear-gradient(180deg, #08101f 0%, #0b1020 100%);
+    }
+
+    .intro__inner,
+    .outro__inner {
+      width: min(var(--max-width), 100%);
+    }
+
+    .intro h1,
+    .outro h2 {
+      font-size: clamp(2rem, 5vw, 4.5rem);
+      line-height: 1.05;
+      margin: 0 0 1rem;
+      max-width: 12ch;
+    }
+
+    .intro p,
+    .outro p {
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 60ch;
+      margin: 0;
+    }
+
+    .story {
+      position: relative;
+      z-index: 1;
+    }
+
+    .scene {
+      position: relative;
+      min-height: 280vh;
+    }
+
+    .scene__sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+    }
+
+    .scene__bg {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      overflow: hidden;
+      background: #050812;
+    }
+
+    .scene__image,
+    .scene__image-next {
+      position: absolute;
+      inset: -4%;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      transform: scale(1.08);
+      will-change: transform, opacity, filter;
+    }
+
+    .scene__image {
+      opacity: 1;
+    }
+
+    .scene__image-next {
+      opacity: 0;
+    }
+
+    .scene__overlay {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(180deg, rgba(2, 6, 18, 0.42), rgba(2, 6, 18, 0.58)),
+        radial-gradient(circle at center, transparent 15%, rgba(2, 6, 18, 0.2) 80%);
+      pointer-events: none;
+    }
+
+    .scene__content {
+      width: min(var(--max-width), 100%);
+      height: 100%;
+      padding: 6vh 1.5rem;
+      display: grid;
+      align-items: center;
+    }
+
+    .panel-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      min-height: 100%;
+      transform: translateY(18vh);
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+
+    .panel-wrap.right {
+      justify-content: flex-end;
+    }
+
+    .panel {
+      width: var(--panel-width);
+      padding: clamp(1.25rem, 2vw, 2rem);
+      border-radius: var(--panel-radius);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.68);
+      margin-bottom: 0.9rem;
+    }
+
+    .panel h2 {
+      font-size: clamp(1.6rem, 3vw, 3rem);
+      line-height: 1.08;
+      margin: 0 0 1rem;
+    }
+
+    .panel p {
+      margin: 0;
+      font-size: clamp(1rem, 1.2vw, 1.15rem);
+      line-height: 1.75;
+      color: var(--muted);
+    }
+
+    .progress {
+      position: fixed;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .progress button {
+      width: 0.8rem;
+      height: 0.8rem;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.28);
+      cursor: pointer;
+      padding: 0;
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .progress button.active {
+      background: rgba(255, 255, 255, 0.95);
+      transform: scale(1.25);
+    }
+
+    @media (max-width: 900px) {
+      .scene {
+        min-height: 240vh;
+      }
+
+      .panel-wrap,
+      .panel-wrap.right {
+        justify-content: center;
+      }
+
+      .progress {
+        right: 0.7rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .scene__image,
+      .scene__image-next,
+      .panel-wrap {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="progress" aria-label="Scene progress" id="progress"></nav>
+
+  <header class="intro">
+    <div class="intro__inner">
+      <h1>Your scrolling story starts here</h1>
+      <p>
+        Replace the sample content below with your real text and images. Each scene starts with the image visible on its own, then the text box rolls upward into view. As the text leaves, the current image fades into the next one.
+      </p>
+    </div>
+  </header>
+
+  <main class="story" id="story">
+    <!-- Scene 1 -->
+    <section class="scene" id="scene-1" data-scene>
+      <div class="scene__sticky">
+        <div class="scene__bg">
+          <div
+            class="scene__image"
+            style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80');"
+            data-current-image
+          ></div>
+          <div
+            class="scene__image-next"
+            style="background-image: url('https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&q=80');"
+            data-next-image
+          ></div>
+          <div class="scene__overlay"></div>
+        </div>
+
+        <div class="scene__content">
+          <div class="panel-wrap" data-panel-wrap>
+            <article class="panel">
+              <span class="eyebrow">Panel 1</span>
+              <h2>First image leads the story</h2>
+              <p>
+                This box appears after the image has already had time to breathe on screen. Keep this paragraph to a manageable reading length so the transition feels elegant instead of rushed.
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scene 2 -->
+    <section class="scene" id="scene-2" data-scene>
+      <div class="scene__sticky">
+        <div class="scene__bg">
+          <div
+            class="scene__image"
+            style="background-image: url('https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&q=80');"
+            data-current-image
+          ></div>
+          <div
+            class="scene__image-next"
+            style="background-image: url('https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1600&q=80');"
+            data-next-image
+          ></div>
+          <div class="scene__overlay"></div>
+        </div>
+
+        <div class="scene__content">
+          <div class="panel-wrap right" data-panel-wrap>
+            <article class="panel">
+              <span class="eyebrow">Panel 2</span>
+              <h2>Then the text scrolls upward</h2>
+              <p>
+                The panel enters from lower on the screen, settles around the middle for readability, then continues upward and fades as the next background begins to take over.
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scene 3 -->
+    <section class="scene" id="scene-3" data-scene>
+      <div class="scene__sticky">
+        <div class="scene__bg">
+          <div
+            class="scene__image"
+            style="background-image: url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1600&q=80');"
+            data-current-image
+          ></div>
+          <div
+            class="scene__image-next"
+            style="background-image: url('https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=1600&q=80');"
+            data-next-image
+          ></div>
+          <div class="scene__overlay"></div>
+        </div>
+
+        <div class="scene__content">
+          <div class="panel-wrap" data-panel-wrap>
+            <article class="panel">
+              <span class="eyebrow">Opening note – reflection</span>
+              <h2>Your role as a manager</h2>
+              <p>
+                Considering the scenarios above, now think about the following question:
+                <br><br>
+                In your role as a manager, how much of your success depends on the following conditions:
+                <br>• risks being identified and add
+
+  <footer class="outro">
+    <div class="outro__inner">
+      <h2>Ready for your real content</h2>
+      <p>
+        Paste your panel text and tell me what images you want behind each one. I can then replace the placeholders and tune the pacing, alignment, and styling.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+    const scenes = [...document.querySelectorAll('[data-scene]')];
+    const progress = document.getElementById('progress');
+
+    scenes.forEach((scene, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', `Go to scene ${index + 1}`);
+      dot.addEventListener('click', () => {
+        scene.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      progress.appendChild(dot);
+    });
+
+    const dots = [...progress.querySelectorAll('button')];
+
+    function updateScene(scene, index) {
+      const rect = scene.getBoundingClientRect();
+      const sceneHeight = scene.offsetHeight - window.innerHeight;
+      const scrolled = clamp(-rect.top / Math.max(sceneHeight, 1), 0, 1);
+
+      const currentImage = scene.querySelector('[data-current-image]');
+      const nextImage = scene.querySelector('[data-next-image]');
+      const panelWrap = scene.querySelector('[data-panel-wrap]');
+
+      const imageHold = clamp(scrolled / 0.24, 0, 1);
+      const panelIn = clamp((scrolled - 0.16) / 0.24, 0, 1);
+      const panelOut = clamp((scrolled - 0.58) / 0.22, 0, 1);
+      const crossfade = clamp((scrolled - 0.68) / 0.24, 0, 1);
+
+      const bgTranslate = scrolled * 10;
+      currentImage.style.transform = `scale(1.08) translateY(${bgTranslate * -0.6}%)`;
+      nextImage.style.transform = `scale(1.08) translateY(${12 - bgTranslate * 0.4}%)`;
+
+      currentImage.style.opacity = String(1 - crossfade);
+      nextImage.style.opacity = String(crossfade);
+      currentImage.style.filter = `brightness(${1 - crossfade * 0.18})`;
+      nextImage.style.filter = `brightness(${0.84 + crossfade * 0.16})`;
+
+      const panelY = 18 - panelIn * 18 - panelOut * 16;
+      const panelOpacity = Math.min(panelIn * 1.2, 1) * (1 - panelOut * 0.92);
+      panelWrap.style.transform = `translateY(${panelY}vh)`;
+      panelWrap.style.opacity = String(panelOpacity);
+
+      const isActive = rect.top <= window.innerHeight * 0.45 && rect.bottom >= window.innerHeight * 0.55;
+      dots[index]?.classList.toggle('active', isActive);
+    }
+
+    function onScroll() {
+      scenes.forEach(updateScene);
+    }
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+  </script>
+</body>
+</html>
